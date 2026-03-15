@@ -33,6 +33,21 @@
 
         <section class="control-card">
           <div class="control-row">
+            <label>Preloaded slots</label>
+          </div>
+          <div class="preset-grid">
+            <button type="button" class="preset-slot" data-preset="pulse">Pulse ring</button>
+            <button type="button" class="preset-slot" data-preset="star">Star bloom</button>
+            <button type="button" class="preset-slot" data-preset="infinity">Infinity loop</button>
+            <button type="button" class="preset-slot" data-preset="spiral">Spiral drift</button>
+            <button type="button" class="preset-slot" data-preset="mandelbrot">Mandelbrot set</button>
+            <button type="button" class="preset-slot" data-preset="butterfly">Butterfly chaos</button>
+            <button type="button" class="preset-slot" data-preset="hypotrochoid">Hypotrochoid knot</button>
+            <button type="button" class="preset-slot" data-preset="lissajous">Lissajous braid</button>
+            <button type="button" class="preset-slot" data-preset="rose">Rose labyrinth</button>
+          </div>
+
+          <div class="control-row">
             <label for="termSlider">Circle count</label>
             <div class="slider-meta">
               <span id="termValue">48</span>
@@ -43,7 +58,7 @@
 
           <div class="buttons">
             <button type="button" id="reset">Fresh canvas</button>
-            <button type="button" id="randomize">Pulse sample</button>
+            <button type="button" id="randomize">Random slot</button>
           </div>
 
           <p class="hint">

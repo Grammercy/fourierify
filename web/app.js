@@ -4,6 +4,7 @@ const slider = document.querySelector('#termSlider');
 const sliderValue = document.querySelector('#termValue');
 const resetBtn = document.querySelector('#reset');
 const randomBtn = document.querySelector('#randomize');
+const presetSlots = Array.from(document.querySelectorAll('.preset-slot'));
 
 let center = { x: 0, y: 0 };
 let path = [];
@@ -140,13 +141,17 @@ function drawEpicycles() {
   if (trace.length > 1) {
     ctx.save();
     ctx.lineWidth = 3;
-    ctx.strokeStyle = 'var(--accent-strong)';
-    ctx.beginPath();
-    trace.forEach((pt, index) => {
-      if (index === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.stroke();
+    const fadeLength = Math.min(trace.length, 220);
+    for (let i = 0; i < fadeLength - 1; i++) {
+      const curr = trace[i];
+      const next = trace[i + 1];
+      const alpha = Math.max(0, 1 - i / fadeLength);
+      ctx.strokeStyle = `rgba(255, 86, 126, ${alpha * 0.9})`;
+      ctx.beginPath();
+      ctx.moveTo(curr.x, curr.y);
+      ctx.lineTo(next.x, next.y);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 }
@@ -168,29 +173,274 @@ function animate() {
   drawPlaceholderText();
 
   if (fourier.length) {
-    time += 0.02;
+    // Keep dense presets readable by reducing angular step as sample count grows.
+    const adaptiveStep = Math.min(0.02, (2 * Math.PI) / Math.max(sampleCount, 1));
+    time += adaptiveStep;
     if (time > Math.PI * 2) time -= Math.PI * 2;
   }
 
   requestAnimationFrame(animate);
 }
 
-function loadDefaultPath() {
+function buildPulsePath() {
   const segments = 360;
   const baseRadius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.35;
-  const defaultPoints = [];
+  const points = [];
   for (let i = 0; i < segments; i++) {
     const t = (i / segments) * Math.PI * 2;
     const ripple = Math.sin(5 * t) * 40;
     const wobble = Math.sin(3 * t) * 18;
     const radius = baseRadius + ripple;
-    defaultPoints.push({
+    points.push({
       x: Math.cos(t) * radius + wobble,
       y: Math.sin(t) * (radius * 0.9) + Math.cos(7 * t) * 12,
     });
   }
-  path = defaultPoints;
+  return points;
+}
+
+function buildStarPath() {
+  const segments = 280;
+  const outerRadius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.34;
+  const innerRadius = outerRadius * 0.42;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / segments) * Math.PI * 2;
+    const mix = (Math.sin(10 * t) + 1) / 2;
+    const radius = innerRadius + (outerRadius - innerRadius) * mix;
+    points.push({
+      x: Math.cos(t) * radius + Math.cos(2 * t) * 15,
+      y: Math.sin(t) * radius + Math.sin(6 * t) * 10,
+    });
+  }
+  return points;
+}
+
+function buildInfinityPath() {
+  const segments = 320;
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.34;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / segments) * Math.PI * 2;
+    const denominator = 1 + Math.sin(t) ** 2;
+    points.push({
+      x: (scale * Math.cos(t)) / denominator,
+      y: (scale * Math.sin(t) * Math.cos(t)) / denominator,
+    });
+  }
+  return points;
+}
+
+function buildSpiralPath() {
+  const segments = 360;
+  const maxRadius = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.36;
+  const turns = 3.2;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const progress = i / (segments - 1);
+    const t = progress * Math.PI * 2 * turns;
+    const radius = 20 + progress * maxRadius;
+    points.push({
+      x: Math.cos(t) * radius + Math.sin(2.5 * t) * 8,
+      y: Math.sin(t) * radius + Math.cos(1.7 * t) * 8,
+    });
+  }
+  return points;
+}
+
+function buildMandelbrotPath() {
+  const width = 190;
+  const height = 130;
+  const maxIter = 72;
+  const inside = Array.from({ length: height }, () => Array(width).fill(false));
+  const boundary = Array.from({ length: height }, () => Array(width).fill(false));
+
+  function toComplexX(col) {
+    return -2.25 + (col / (width - 1)) * 3.1;
+  }
+
+  function toComplexY(row) {
+    return -1.2 + (row / (height - 1)) * 2.4;
+  }
+
+  for (let row = 0; row < height; row++) {
+    const ci = toComplexY(row);
+    for (let col = 0; col < width; col++) {
+      const cr = toComplexX(col);
+      let zr = 0;
+      let zi = 0;
+      let iter = 0;
+      while (iter < maxIter) {
+        const zr2 = zr * zr - zi * zi + cr;
+        const zi2 = 2 * zr * zi + ci;
+        zr = zr2;
+        zi = zi2;
+        if (zr * zr + zi * zi > 4) break;
+        iter += 1;
+      }
+      inside[row][col] = iter === maxIter;
+    }
+  }
+
+  for (let row = 1; row < height - 1; row++) {
+    for (let col = 1; col < width - 1; col++) {
+      if (!inside[row][col]) continue;
+      if (!inside[row - 1][col] || !inside[row + 1][col] || !inside[row][col - 1] || !inside[row][col + 1]) {
+        boundary[row][col] = true;
+      }
+    }
+  }
+
+  let start = null;
+  for (let row = 0; row < height && !start; row++) {
+    for (let col = 0; col < width; col++) {
+      if (boundary[row][col]) {
+        start = { row, col };
+        break;
+      }
+    }
+  }
+
+  if (!start) return buildPulsePath();
+
+  const directions = [
+    { dr: 0, dc: 1 },
+    { dr: 1, dc: 1 },
+    { dr: 1, dc: 0 },
+    { dr: 1, dc: -1 },
+    { dr: 0, dc: -1 },
+    { dr: -1, dc: -1 },
+    { dr: -1, dc: 0 },
+    { dr: -1, dc: 1 },
+  ];
+
+  let current = { row: start.row, col: start.col };
+  let directionIndex = 0;
+  const ordered = [];
+  const maxSteps = width * height * 2;
+  let steps = 0;
+
+  while (steps < maxSteps) {
+    const xNorm = (current.col / (width - 1)) * 2 - 1;
+    const yNorm = (current.row / (height - 1)) * 2 - 1;
+    ordered.push({ xNorm, yNorm });
+
+    let foundNext = false;
+    for (let scan = 0; scan < directions.length; scan++) {
+      const idx = (directionIndex + scan + 6) % directions.length;
+      const nextRow = current.row + directions[idx].dr;
+      const nextCol = current.col + directions[idx].dc;
+      if (nextRow < 0 || nextRow >= height || nextCol < 0 || nextCol >= width) continue;
+      if (!boundary[nextRow][nextCol]) continue;
+      current = { row: nextRow, col: nextCol };
+      directionIndex = idx;
+      foundNext = true;
+      break;
+    }
+
+    if (!foundNext) break;
+    if (current.row === start.row && current.col === start.col && ordered.length > 40) break;
+    steps += 1;
+  }
+
+  if (ordered.length < 24) return buildPulsePath();
+
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight);
+  return ordered.map((pt) => ({
+    x: pt.xNorm * scale * 0.36,
+    y: pt.yNorm * scale * 0.28,
+  }));
+}
+
+function buildButterflyPath() {
+  const segments = 1200;
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.04;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / (segments - 1)) * Math.PI * 24;
+    const radial = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) + Math.sin(t / 12) ** 5;
+    points.push({
+      x: Math.sin(t) * radial * scale,
+      y: -Math.cos(t) * radial * scale,
+    });
+  }
+  return points;
+}
+
+function buildHypotrochoidPath() {
+  const segments = 1400;
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.0035;
+  const R = 88;
+  const r = 21;
+  const d = 36;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / (segments - 1)) * Math.PI * 2 * 21;
+    const base = (R - r) * t / r;
+    points.push({
+      x: ((R - r) * Math.cos(t) + d * Math.cos(base)) * scale,
+      y: ((R - r) * Math.sin(t) - d * Math.sin(base)) * scale,
+    });
+  }
+  return points;
+}
+
+function buildLissajousPath() {
+  const segments = 1400;
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight);
+  const ax = scale * 0.34;
+  const ay = scale * 0.28;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / (segments - 1)) * Math.PI * 2 * 9;
+    const x = ax * Math.sin(5 * t + Math.PI / 3) + Math.sin(17 * t) * 14;
+    const y = ay * Math.sin(8 * t) + Math.cos(13 * t) * 10;
+    points.push({ x, y });
+  }
+  return points;
+}
+
+function buildRosePath() {
+  const segments = 1500;
+  const scale = Math.min(canvas.clientWidth, canvas.clientHeight) * 0.33;
+  const petals = 11;
+  const points = [];
+  for (let i = 0; i < segments; i++) {
+    const t = (i / (segments - 1)) * Math.PI * 2 * 7;
+    const r = (0.2 + 0.8 * Math.abs(Math.cos(petals * t / 2))) * (1 + 0.18 * Math.sin(19 * t));
+    points.push({
+      x: Math.cos(t) * scale * r,
+      y: Math.sin(t) * scale * r,
+    });
+  }
+  return points;
+}
+
+const presetBuilders = {
+  pulse: buildPulsePath,
+  star: buildStarPath,
+  infinity: buildInfinityPath,
+  spiral: buildSpiralPath,
+  mandelbrot: buildMandelbrotPath,
+  butterfly: buildButterflyPath,
+  hypotrochoid: buildHypotrochoidPath,
+  lissajous: buildLissajousPath,
+  rose: buildRosePath,
+};
+
+function setActivePreset(name) {
+  presetSlots.forEach((slot) => {
+    slot.classList.toggle('active', slot.dataset.preset === name);
+  });
+}
+
+function loadPresetPath(name) {
+  const builder = presetBuilders[name];
+  if (!builder) return;
+  path = builder();
   trace = [];
+  time = 0;
+  setActivePreset(name);
   updateFourier();
 }
 
@@ -201,6 +451,7 @@ function clearCanvas() {
   sampleCount = 0;
   slider.max = 1;
   slider.value = 1;
+  setActivePreset('');
   updateSliderUI();
 }
 
@@ -208,6 +459,7 @@ function handlePointerStart(event) {
   canvas.setPointerCapture?.(event.pointerId);
   isDrawing = true;
   activePointer = event.pointerId;
+  setActivePreset('');
   path = [];
   trace = [];
   time = 0;
@@ -231,7 +483,16 @@ slider.addEventListener('input', updateSliderUI);
 resetBtn.addEventListener('click', () => {
   clearCanvas();
 });
-randomBtn.addEventListener('click', loadDefaultPath);
+presetSlots.forEach((slot) => {
+  slot.addEventListener('click', () => {
+    loadPresetPath(slot.dataset.preset);
+  });
+});
+randomBtn.addEventListener('click', () => {
+  const names = Object.keys(presetBuilders);
+  const choice = names[Math.floor(Math.random() * names.length)];
+  loadPresetPath(choice);
+});
 canvas.addEventListener('pointerdown', handlePointerStart);
 canvas.addEventListener('pointermove', handlePointerMove);
 canvas.addEventListener('pointerup', handlePointerEnd);
@@ -242,5 +503,5 @@ window.addEventListener('resize', () => {
 });
 
 resizeCanvas();
-loadDefaultPath();
+loadPresetPath('pulse');
 animate();

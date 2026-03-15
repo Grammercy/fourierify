@@ -168,6 +168,26 @@ canvas {
   color: var(--muted);
 }
 
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+button.preset-slot {
+  background: linear-gradient(130deg, rgba(255, 255, 255, 0.08), rgba(110, 245, 255, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  font-size: 0.72rem;
+  padding: 0.7rem 0.8rem;
+}
+
+button.preset-slot.active {
+  border-color: rgba(110, 245, 255, 0.75);
+  box-shadow: 0 0 0 1px rgba(110, 245, 255, 0.25), 0 12px 24px rgba(110, 245, 255, 0.2);
+  background: linear-gradient(130deg, rgba(110, 245, 255, 0.3), rgba(255, 108, 199, 0.2));
+}
+
 .slider-meta {
   font-family: 'Aldrich', 'Archivo', sans-serif;
   font-size: 1.25rem;
