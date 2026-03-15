@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Draw by hand and watch a Fourier epicycle reconstruction reanimate your stroke count with slick neon controls."
+    />
+    <title>Fourierify — Epicycle Sketch Lab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="scene">
+      <header class="hero">
+        <p class="eyebrow">Fourierify</p>
+        <h1>Sketch a gesture, then watch epicycles choreograph it.</h1>
+        <p class="lede">
+          Draw a fluid line anywhere on the canvas. When you lift the pointer, a constellation of rotating circles
+          will redraw it using Fourier magic. Use the slider to decide how many orbiting circles keep the dance precise
+          or boldly abstract.
+        </p>
+      </header>
+
+      <main class="workspace">
+        <section class="canvas-shell">
+          <canvas id="draw"></canvas>
+          <div class="canvas-overlay">
+            <p>Hold to draw → release to compute epicycles. Slider adjusts the number of circles in motion.</p>
+            <span class="pulse"></span>
+          </div>
+        </section>
+
+        <section class="control-card">
+          <div class="control-row">
+            <label for="termSlider">Circle count</label>
+            <div class="slider-meta">
+              <span id="termValue">48</span>
+              <span>circles</span>
+            </div>
+          </div>
+          <input type="range" id="termSlider" min="1" max="120" value="48" />
+
+          <div class="buttons">
+            <button type="button" id="reset">Fresh canvas</button>
+            <button type="button" id="randomize">Pulse sample</button>
+          </div>
+
+          <p class="hint">
+            Fewer circles keep the motion raw and playful; more circles capture every subtle curl. The demo keeps animating
+            even when you pause, so you can keep watching the epicycles redraw your line.
+          </p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
